@@ -1,0 +1,507 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
+/* ===========================================================================
+   Theme bridge
+   ---------------------------------------------------------------------------
+   `@theme inline` turns a CSS variable into a Tailwind utility without copying
+   its value, so `bg-card` stays late-bound to whatever `--card` is under the
+   current theme class. Everything colour-ish is declared once below in :root /
+   .dark and only referenced here.
+   =========================================================================*/
+@theme inline {
+  /* --- Typography ------------------------------------------------------- */
+  --font-sans: var(--font-sans);
+  --font-heading: var(--font-heading);
+  --font-mono: var(--font-geist-mono);
+
+  /* A named scale, so a heading is `text-h2` rather than a guessed
+     text-xl/font-semibold/tracking-tight trio. Each step carries its own
+     leading, tracking and weight. */
+  --text-display: 2.5rem;
+  --text-display--line-height: 1.06;
+  --text-display--letter-spacing: -0.032em;
+  --text-display--font-weight: 700;
+
+  --text-h1: 1.75rem;
+  --text-h1--line-height: 1.15;
+  --text-h1--letter-spacing: -0.025em;
+  --text-h1--font-weight: 600;
+
+  --text-h2: 1.375rem;
+  --text-h2--line-height: 1.25;
+  --text-h2--letter-spacing: -0.02em;
+  --text-h2--font-weight: 600;
+
+  --text-h3: 1.125rem;
+  --text-h3--line-height: 1.35;
+  --text-h3--letter-spacing: -0.014em;
+  --text-h3--font-weight: 600;
+
+  --text-h4: 0.9375rem;
+  --text-h4--line-height: 1.4;
+  --text-h4--letter-spacing: -0.008em;
+  --text-h4--font-weight: 600;
+
+  --text-body: 0.9375rem;
+  --text-body--line-height: 1.55;
+
+  --text-caption: 0.75rem;
+  --text-caption--line-height: 1.4;
+  --text-caption--letter-spacing: 0.005em;
+
+  /* --- Surfaces --------------------------------------------------------- */
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+
+  /* --- Semantic accents -------------------------------------------------
+     `brand`/`success`/`warning`/`danger` say what a thing means; `fuel` and
+     `expense` are the two category hues the cost surfaces use. Each has an
+     `-ink` partner dark enough to read as text on its own theme, because the
+     vivid fill never is. */
+  --color-brand: var(--brand);
+  --color-brand-ink: var(--brand-ink);
+  --color-success: var(--success);
+  --color-success-ink: var(--success-ink);
+  --color-warning: var(--warning);
+  --color-warning-ink: var(--warning-ink);
+  --color-danger: var(--danger);
+  --color-danger-ink: var(--danger-ink);
+  --color-fuel: var(--fuel);
+  --color-fuel-ink: var(--fuel-ink);
+  --color-expense: var(--expense);
+  --color-expense-ink: var(--expense-ink);
+
+  /* The per-module hue. `[data-tone]` (below) rebinds these for a subtree, so
+     `bg-tone/10 text-tone-ink` renders in that module's colour with no
+     conditional class strings anywhere in the TSX. */
+  --color-tone: var(--tone);
+  --color-tone-ink: var(--tone-ink);
+
+  /* --- Radii ------------------------------------------------------------- */
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+/* Shadows and motion are plain theme keys: their values are literal, so they
+   do not need the late binding `inline` provides. */
+@theme {
+  --shadow-sm:
+    0 1px 2px -1px oklch(0.208 0.04 265.8 / 0.08),
+    0 1px 3px 0 oklch(0.208 0.04 265.8 / 0.06);
+  --shadow-md:
+    0 2px 4px -2px oklch(0.208 0.04 265.8 / 0.07),
+    0 8px 20px -6px oklch(0.208 0.04 265.8 / 0.12);
+  /* Picks up the surrounding module hue, so a card's lift glows in its own
+     colour and falls back to the brand blue outside a [data-tone] subtree. */
+  --shadow-glow:
+    0 0 0 1px color-mix(in oklch, var(--tone, var(--brand)) 24%, transparent),
+    0 14px 34px -14px
+      color-mix(in oklch, var(--tone, var(--brand)) 62%, transparent);
+
+  --animate-shimmer-sweep: shimmer-sweep 1.8s ease-in-out infinite;
+  --animate-tap-ripple: tap-ripple 520ms ease-out;
+
+  @keyframes shimmer-sweep {
+    from {
+      transform: translateX(-100%);
+    }
+    to {
+      transform: translateX(100%);
+    }
+  }
+
+  @keyframes tap-ripple {
+    from {
+      opacity: 0.35;
+      transform: scale(0.35);
+    }
+    to {
+      opacity: 0;
+      transform: scale(2.2);
+    }
+  }
+}
+
+/* ===========================================================================
+   Palette
+   ---------------------------------------------------------------------------
+   The ten `--hue-*` pairs are the only place a literal colour is written. Dark
+   mode re-points the same names at lighter steps, so every alias, gradient and
+   [data-tone] rule below flips for free.
+   =========================================================================*/
+:root {
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-heading: var(--font-sora), var(--font-sans);
+
+  --hue-brand: oklch(0.546 0.215 262.9); /* blue 600   #2563eb */
+  --hue-brand-ink: oklch(0.488 0.217 264.4); /* blue 700 */
+  --hue-sky: oklch(0.715 0.126 215.2); /* cyan 500   #06b6d4 */
+  --hue-sky-ink: oklch(0.52 0.094 223.1); /* cyan 700 */
+  --hue-indigo: oklch(0.585 0.204 277.1); /* indigo 500 #6366f1 */
+  --hue-indigo-ink: oklch(0.457 0.215 277);
+  --hue-violet: oklch(0.606 0.219 292.7); /* violet 500 #8b5cf6 */
+  --hue-violet-ink: oklch(0.491 0.241 292.6);
+  --hue-emerald: oklch(0.696 0.149 162.5); /* emerald 500 #10b981 */
+  --hue-emerald-ink: oklch(0.508 0.105 165.6);
+  --hue-teal: oklch(0.704 0.123 182.5); /* teal 500   #14b8a6 */
+  --hue-teal-ink: oklch(0.511 0.086 186.4);
+  --hue-amber: oklch(0.769 0.165 70.1); /* amber 500  #f59e0b */
+  --hue-amber-ink: oklch(0.555 0.146 49);
+  --hue-orange: oklch(0.705 0.187 47.6); /* orange 500 #f97316 */
+  --hue-orange-ink: oklch(0.553 0.174 38.4);
+  --hue-rose: oklch(0.637 0.208 25.3); /* rose 500   #ef4444 */
+  --hue-rose-ink: oklch(0.505 0.19 27.5);
+  --hue-slate: oklch(0.554 0.041 257.4); /* slate 500  #64748b */
+  --hue-slate-ink: oklch(0.372 0.039 257.3);
+
+  /* Meaning, not colour: these are what non-module code reaches for. */
+  --brand: var(--hue-brand);
+  --brand-ink: var(--hue-brand-ink);
+  --success: var(--hue-emerald);
+  --success-ink: var(--hue-emerald-ink);
+  --warning: var(--hue-amber);
+  --warning-ink: var(--hue-amber-ink);
+  --danger: var(--hue-rose);
+  --danger-ink: var(--hue-rose-ink);
+  --fuel: var(--hue-orange);
+  --fuel-ink: var(--hue-orange-ink);
+  --expense: var(--hue-violet);
+  --expense-ink: var(--hue-violet-ink);
+
+  /* Outside a [data-tone] subtree the module hue is the brand. */
+  --tone: var(--brand);
+  --tone-ink: var(--brand-ink);
+
+  /* Surfaces: a cool slate ramp rather than pure greys, so the accents sit on
+     something that shares their temperature. */
+  --background: oklch(0.99 0.004 247.9);
+  --foreground: oklch(0.208 0.04 265.8);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.208 0.04 265.8);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.208 0.04 265.8);
+  --primary: var(--hue-brand);
+  --primary-foreground: oklch(0.99 0.004 247.9);
+  --secondary: oklch(0.968 0.007 247.9);
+  --secondary-foreground: oklch(0.279 0.037 260);
+  --muted: oklch(0.968 0.007 247.9);
+  --muted-foreground: oklch(0.504 0.041 257.4);
+  --accent: oklch(0.955 0.014 250);
+  --accent-foreground: oklch(0.279 0.037 260);
+  --destructive: oklch(0.577 0.215 27.3);
+  --border: oklch(0.929 0.013 255.5);
+  --input: oklch(0.929 0.013 255.5);
+  --ring: oklch(0.623 0.188 259.8);
+  --radius: 0.625rem;
+
+  --sidebar: oklch(0.984 0.005 247.9);
+  --sidebar-foreground: oklch(0.208 0.04 265.8);
+  --sidebar-primary: var(--hue-brand);
+  --sidebar-primary-foreground: oklch(0.99 0.004 247.9);
+  --sidebar-accent: oklch(0.955 0.014 250);
+  --sidebar-accent-foreground: oklch(0.279 0.037 260);
+  --sidebar-border: oklch(0.929 0.013 255.5);
+  --sidebar-ring: oklch(0.623 0.188 259.8);
+
+  --chart-1: oklch(0.87 0 0);
+  --chart-2: oklch(0.556 0 0);
+  --chart-3: oklch(0.439 0 0);
+  --chart-4: oklch(0.371 0 0);
+  --chart-5: oklch(0.269 0 0);
+
+  /* --- Gradients -------------------------------------------------------- */
+  --gradient-primary: linear-gradient(
+    135deg,
+    var(--hue-brand) 0%,
+    var(--hue-violet) 100%
+  );
+  --gradient-fuel: linear-gradient(
+    135deg,
+    var(--hue-orange) 0%,
+    var(--hue-amber) 100%
+  );
+  --gradient-success: linear-gradient(
+    135deg,
+    var(--hue-emerald) 0%,
+    var(--hue-teal) 100%
+  );
+  --gradient-alert: linear-gradient(
+    135deg,
+    var(--hue-rose) 0%,
+    oklch(0.505 0.19 27.5) 100%
+  );
+  /* The wash behind a page header: the module hue fading into the page. */
+  --gradient-tone-wash: linear-gradient(
+    120deg,
+    color-mix(in oklch, var(--tone) 13%, transparent) 0%,
+    color-mix(in oklch, var(--tone) 4%, transparent) 42%,
+    transparent 78%
+  );
+}
+
+.dark {
+  --hue-brand: oklch(0.623 0.188 259.8); /* blue 500 */
+  --hue-brand-ink: oklch(0.809 0.096 251.8); /* blue 300 */
+  --hue-sky: oklch(0.797 0.134 211.5);
+  --hue-sky-ink: oklch(0.865 0.115 207.1);
+  --hue-indigo: oklch(0.68 0.158 276.9);
+  --hue-indigo-ink: oklch(0.785 0.104 274.7);
+  --hue-violet: oklch(0.709 0.159 293.5);
+  --hue-violet-ink: oklch(0.811 0.101 293.6);
+  --hue-emerald: oklch(0.773 0.153 163.2);
+  --hue-emerald-ink: oklch(0.845 0.13 165);
+  --hue-teal: oklch(0.785 0.133 181.9);
+  --hue-teal-ink: oklch(0.855 0.125 181.1);
+  --hue-amber: oklch(0.837 0.164 84.4);
+  --hue-amber-ink: oklch(0.879 0.153 91.6);
+  --hue-orange: oklch(0.758 0.159 55.9);
+  --hue-orange-ink: oklch(0.837 0.117 66.3);
+  --hue-rose: oklch(0.711 0.166 22.2);
+  --hue-rose-ink: oklch(0.808 0.103 19.6);
+  --hue-slate: oklch(0.711 0.035 256.8);
+  --hue-slate-ink: oklch(0.869 0.02 252.9);
+
+  --background: oklch(0.166 0.033 265);
+  --foreground: oklch(0.968 0.007 247.9);
+  --card: oklch(0.208 0.04 265.8);
+  --card-foreground: oklch(0.968 0.007 247.9);
+  --popover: oklch(0.221 0.039 265);
+  --popover-foreground: oklch(0.968 0.007 247.9);
+  /* Stays blue 600 in both themes: white on it clears 5:1, which blue 500 does
+     not, and the brand should not change hue with the lights. */
+  --primary: oklch(0.546 0.215 262.9);
+  --primary-foreground: oklch(0.99 0.004 247.9);
+  --secondary: oklch(0.279 0.037 260);
+  --secondary-foreground: oklch(0.968 0.007 247.9);
+  --muted: oklch(0.269 0.037 261);
+  --muted-foreground: oklch(0.711 0.035 256.8);
+  --accent: oklch(0.295 0.038 260);
+  --accent-foreground: oklch(0.968 0.007 247.9);
+  --destructive: oklch(0.704 0.191 22.216);
+  --border: oklch(1 0 0 / 11%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.623 0.188 259.8);
+
+  --sidebar: oklch(0.192 0.037 265);
+  --sidebar-foreground: oklch(0.968 0.007 247.9);
+  --sidebar-primary: var(--hue-brand);
+  --sidebar-primary-foreground: oklch(0.99 0.004 247.9);
+  --sidebar-accent: oklch(0.295 0.038 260);
+  --sidebar-accent-foreground: oklch(0.968 0.007 247.9);
+  --sidebar-border: oklch(1 0 0 / 11%);
+  --sidebar-ring: oklch(0.623 0.188 259.8);
+
+  --chart-1: oklch(0.87 0 0);
+  --chart-2: oklch(0.556 0 0);
+  --chart-3: oklch(0.439 0 0);
+  --chart-4: oklch(0.371 0 0);
+  --chart-5: oklch(0.269 0 0);
+}
+
+/* ---------------------------------------------------------------------------
+   Module tones
+   Set `data-tone` on any element and everything inside it - icon badge, stat
+   card border, header wash, hover glow - renders in that hue. One attribute
+   instead of ten colour-conditional class maps.
+   ------------------------------------------------------------------------*/
+[data-tone="brand"] {
+  --tone: var(--hue-brand);
+  --tone-ink: var(--hue-brand-ink);
+}
+[data-tone="sky"] {
+  --tone: var(--hue-sky);
+  --tone-ink: var(--hue-sky-ink);
+}
+[data-tone="indigo"] {
+  --tone: var(--hue-indigo);
+  --tone-ink: var(--hue-indigo-ink);
+}
+[data-tone="violet"] {
+  --tone: var(--hue-violet);
+  --tone-ink: var(--hue-violet-ink);
+}
+[data-tone="emerald"] {
+  --tone: var(--hue-emerald);
+  --tone-ink: var(--hue-emerald-ink);
+}
+[data-tone="teal"] {
+  --tone: var(--hue-teal);
+  --tone-ink: var(--hue-teal-ink);
+}
+[data-tone="amber"] {
+  --tone: var(--hue-amber);
+  --tone-ink: var(--hue-amber-ink);
+}
+[data-tone="orange"] {
+  --tone: var(--hue-orange);
+  --tone-ink: var(--hue-orange-ink);
+}
+[data-tone="rose"] {
+  --tone: var(--hue-rose);
+  --tone-ink: var(--hue-rose-ink);
+}
+[data-tone="slate"] {
+  --tone: var(--hue-slate);
+  --tone-ink: var(--hue-slate-ink);
+}
+
+/* ===========================================================================
+   Utilities
+   =========================================================================*/
+
+/* Frosted bar: a translucent surface that blurs whatever scrolls under it. */
+@utility glass {
+  background-color: color-mix(in oklch, var(--background) 82%, transparent);
+  @supports (backdrop-filter: blur(1px)) {
+    background-color: color-mix(in oklch, var(--background) 62%, transparent);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+  }
+}
+
+/* The same, over the sidebar surface rather than the page surface. */
+@utility glass-sidebar {
+  background-color: color-mix(in oklch, var(--sidebar) 88%, transparent);
+  @supports (backdrop-filter: blur(1px)) {
+    background-color: color-mix(in oklch, var(--sidebar) 68%, transparent);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+  }
+}
+
+/* Paints text with the brand gradient. */
+@utility text-gradient {
+  background-image: var(--gradient-primary);
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+  /* A gradient clipped to text can cut a descender off; a hair of padding
+     keeps the whole glyph inside the painted box. */
+  padding-bottom: 0.06em;
+}
+
+/* The soft hue wash behind a section header. */
+@utility tone-wash {
+  background-image: var(--gradient-tone-wash);
+}
+
+/* Card lift: rises slightly and picks up a glow in the surrounding module
+   hue. Paired with `transition` so the pointer leaving animates back. */
+@utility lift {
+  transition:
+    transform 220ms cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 220ms cubic-bezier(0.22, 1, 0.36, 1);
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-glow);
+  }
+}
+
+/* ===========================================================================
+   Base
+   =========================================================================*/
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  html {
+    @apply font-sans;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    @apply font-heading;
+  }
+
+  /* Every interactive element gets the same visible ring, including those
+     whose component does not spell one out. */
+  :focus-visible {
+    @apply outline-2 outline-offset-2 outline-ring;
+  }
+
+  ::selection {
+    background-color: color-mix(in oklch, var(--brand) 22%, transparent);
+  }
+}
+
+/* Honour the OS switch: everything still renders, nothing moves. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .lift:hover {
+    transform: none;
+  }
+}
+
+/* --- Chart tokens ----------------------------------------------------------
+   The app's own --chart-* ramp is greyscale, which is right for its surfaces
+   but leaves data marks with no identity. Every chart on /reports plots a
+   single measure, so one validated accent hue carries all of them - stepped
+   separately for each surface rather than flipped automatically. */
+.viz-root {
+  --series-1: #2a78d6;
+  --viz-grid: color-mix(in oklch, var(--foreground) 12%, transparent);
+  --viz-axis: color-mix(in oklch, var(--foreground) 45%, transparent);
+}
+
+.dark .viz-root {
+  --series-1: #3987e5;
+  --viz-grid: color-mix(in oklch, var(--foreground) 14%, transparent);
+  --viz-axis: color-mix(in oklch, var(--foreground) 50%, transparent);
+}

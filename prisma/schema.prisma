@@ -1,0 +1,463 @@
+// `prisma-client`, not the legacy `prisma-client-js`: Prisma 7's generator
+// emits real ESM with a `client` entrypoint, a `models/` directory and a
+// standalone `enums.ts`, which is what the app imports throughout.
+generator client {
+  provider = "prisma-client"
+  output   = "../lib/generated/prisma"
+  moduleFormat = "esm"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// --- Enums ------------------------------------------------------------------
+
+enum Role {
+  OWNER
+  ADMIN
+  MANAGER
+  VIEWER
+  DRIVER
+}
+
+enum DeviceStatus {
+  ONLINE
+  OFFLINE
+  UNASSIGNED
+}
+
+enum VehicleStatus {
+  ACTIVE
+  INACTIVE
+  MAINTENANCE
+}
+
+enum DriverStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+}
+
+enum GeofenceKind {
+  CIRCLE
+  POLYGON
+}
+
+enum TripStatus {
+  IN_PROGRESS
+  COMPLETED
+}
+
+enum AlertKind {
+  SPEEDING
+  HARSH_BRAKING
+  HARSH_ACCELERATION
+  EXCESSIVE_IDLE
+  IGNITION_ON
+  IGNITION_OFF
+  GEOFENCE_ENTER
+  GEOFENCE_EXIT
+  POWER_CUT
+  SOS
+  LOW_BATTERY
+  DEVICE_OFFLINE
+}
+
+enum AlertSeverity {
+  INFO
+  WARNING
+  CRITICAL
+}
+
+enum NotificationChannel {
+  EMAIL
+  SMS
+  PUSH
+  WEBHOOK
+}
+
+enum MaintenanceKind {
+  SERVICE
+  REPAIR
+  INSPECTION
+  TIRES
+  OTHER
+}
+
+enum MaintenanceStatus {
+  SCHEDULED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+// --- Tenancy & identity -----------------------------------------------------
+
+model Organization {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  timezone  String   @default("UTC")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users      User[]
+  vehicles   Vehicle[]
+  devices    Device[]
+  drivers    Driver[]
+  trips      Trip[]
+  geofences  Geofence[]
+  alertRules AlertRule[]
+  alerts     Alert[]
+  maintenance MaintenanceRecord[]
+
+  @@map("organizations")
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  passwordHash  String?
+  name          String?
+  image         String?
+  role          Role      @default(VIEWER)
+  emailVerified DateTime?
+  lastLoginAt   DateTime?
+
+  twoFactorEnabled Boolean @default(false)
+  twoFactorSecret  String?
+
+  orgId String
+  org   Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  accounts           Account[]
+  sessions           Session[]
+  driverProfile      Driver?
+  acknowledgedAlerts Alert[]   @relation("AlertAcknowledgedBy")
+
+  @@index([orgId])
+  @@map("users")
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("sessions")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
+
+// --- Fleet ------------------------------------------------------------------
+
+model Vehicle {
+  id       String        @id @default(cuid())
+  orgId    String
+  org      Organization  @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  plate    String
+  make     String?
+  model    String?
+  year     Int?
+  vin      String?
+  color    String?
+  fuelType String?
+  odometer BigInt        @default(0)
+  status   VehicleStatus @default(ACTIVE)
+  notes    String?
+
+  driverId String?
+  driver   Driver? @relation(fields: [driverId], references: [id], onDelete: SetNull)
+
+  device      Device?
+  positions   Position[]
+  trips       Trip[]
+  alerts      Alert[]
+  maintenance MaintenanceRecord[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([orgId, plate])
+  @@index([orgId])
+  @@index([driverId])
+  @@map("vehicles")
+}
+
+model Device {
+  id        String       @id @default(cuid())
+  orgId     String
+  org       Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  imei      String       @unique
+  simNumber String?
+  protocol  String       @default("teltonika")
+  model     String?
+  firmware  String?
+  status    DeviceStatus @default(UNASSIGNED)
+
+  lastSeenAt DateTime?
+
+  vehicleId String?  @unique
+  vehicle   Vehicle? @relation(fields: [vehicleId], references: [id], onDelete: SetNull)
+
+  positions Position[]
+  alerts    Alert[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([orgId])
+  @@map("devices")
+}
+
+model Driver {
+  id            String       @id @default(cuid())
+  orgId         String
+  org           Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  name          String
+  email         String?
+  phone         String?
+  licenseNumber String?
+  licenseExpiry DateTime?
+  rfidTag       String?
+  status        DriverStatus @default(ACTIVE)
+
+  userId String? @unique
+  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  vehicles Vehicle[]
+  trips    Trip[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([orgId])
+  @@map("drivers")
+}
+
+// --- Telemetry --------------------------------------------------------------
+
+model Position {
+  id BigInt @id @default(autoincrement())
+
+  deviceId String
+  device   Device @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+
+  vehicleId String?
+  vehicle   Vehicle? @relation(fields: [vehicleId], references: [id], onDelete: SetNull)
+
+  ts         DateTime
+  lat        Float
+  lng        Float
+  speed      Float?
+  heading    Float?
+  altitude   Float?
+  satellites Int?
+  ignition   Boolean?
+  odometer   BigInt?
+
+  attributes Json?
+
+  createdAt DateTime @default(now())
+
+  @@index([deviceId, ts(sort: Desc)])
+  @@index([vehicleId, ts(sort: Desc)])
+  @@map("positions")
+}
+
+model Trip {
+  id    String       @id @default(cuid())
+  orgId String
+  org   Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  vehicleId String
+  vehicle   Vehicle @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+
+  driverId String?
+  driver   Driver? @relation(fields: [driverId], references: [id], onDelete: SetNull)
+
+  startTs DateTime
+  endTs   DateTime?
+
+  startLat     Float?
+  startLng     Float?
+  startAddress String?
+  endLat       Float?
+  endLng       Float?
+  endAddress   String?
+
+  distanceM Int?
+  durationS Int?
+  idleTimeS Int?
+  maxSpeed  Float?
+  avgSpeed  Float?
+
+  status TripStatus @default(IN_PROGRESS)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([orgId, startTs(sort: Desc)])
+  @@index([vehicleId, startTs(sort: Desc)])
+  @@map("trips")
+}
+
+// --- Geofencing & alerts ----------------------------------------------------
+
+model Geofence {
+  id    String       @id @default(cuid())
+  orgId String
+  org   Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  name String
+  kind GeofenceKind
+
+  centerLat Float?
+  centerLng Float?
+  radiusM   Int?
+
+  polygon Json?
+
+  color  String  @default("#3b82f6")
+  active Boolean @default(true)
+
+  alerts Alert[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([orgId])
+  @@map("geofences")
+}
+
+model AlertRule {
+  id    String       @id @default(cuid())
+  orgId String
+  org   Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  name     String
+  kind     AlertKind
+  severity AlertSeverity @default(WARNING)
+  active   Boolean       @default(true)
+
+  config Json @default("{}")
+
+  channels NotificationChannel[] @default([EMAIL])
+
+  vehicleIds String[] @default([])
+
+  alerts Alert[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([orgId])
+  @@map("alert_rules")
+}
+
+model Alert {
+  id    String       @id @default(cuid())
+  orgId String
+  org   Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  ruleId String?
+  rule   AlertRule? @relation(fields: [ruleId], references: [id], onDelete: SetNull)
+
+  vehicleId String?
+  vehicle   Vehicle? @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+
+  deviceId String?
+  device   Device?  @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+
+  geofenceId String?
+  geofence   Geofence? @relation(fields: [geofenceId], references: [id], onDelete: SetNull)
+
+  kind     AlertKind
+  severity AlertSeverity @default(WARNING)
+  message  String
+  ts       DateTime
+  lat      Float?
+  lng      Float?
+
+  readAt           DateTime?
+  acknowledgedAt   DateTime?
+  acknowledgedById String?
+  acknowledgedBy   User?     @relation("AlertAcknowledgedBy", fields: [acknowledgedById], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+
+  @@index([orgId, ts(sort: Desc)])
+  @@index([vehicleId, ts(sort: Desc)])
+  @@map("alerts")
+}
+
+// --- Maintenance ------------------------------------------------------------
+
+model MaintenanceRecord {
+  id    String       @id @default(cuid())
+  orgId String
+  org   Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  vehicleId String
+  vehicle   Vehicle @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+
+  kind   MaintenanceKind
+  status MaintenanceStatus @default(SCHEDULED)
+  title  String
+  notes  String?
+  vendor String?
+
+  // Either date-based or odometer-based; a job may set both and falls due on
+  // whichever arrives first.
+  dueAt       DateTime?
+  dueOdometer BigInt?
+
+  completedAt       DateTime?
+  completedOdometer BigInt?
+
+  // Minor units (cents) so money never rides on a float.
+  costCents Int?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([orgId, dueAt])
+  @@index([vehicleId])
+  @@map("maintenance_records")
+}
