@@ -117,7 +117,7 @@ export default async function OverviewPage() {
               variant="ghost"
               size="sm"
               nativeButton={false}
-              render={<Link href="/alerts" />}
+              render={<Link href="/alerts" prefetch={false} />}
             >
               All alerts
             </Button>
@@ -173,7 +173,7 @@ export default async function OverviewPage() {
               variant="ghost"
               size="sm"
               nativeButton={false}
-              render={<Link href="/reports" />}
+              render={<Link href="/reports" prefetch={false} />}
             >
               Full reports
             </Button>
