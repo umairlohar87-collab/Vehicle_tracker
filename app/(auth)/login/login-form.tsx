@@ -36,9 +36,7 @@ export function LoginForm({ callbackUrl }: { callbackUrl?: string }) {
     <Card className="shadow-md">
       <CardHeader>
         <CardTitle>Sign in</CardTitle>
-        <CardDescription>
-          Enter your credentials to reach your fleet.
-        </CardDescription>
+        <CardDescription>Enter your credentials to reach your fleet.</CardDescription>
       </CardHeader>
 
       <CardContent>
@@ -63,12 +61,9 @@ export function LoginForm({ callbackUrl }: { callbackUrl?: string }) {
               autoComplete="email"
               placeholder="you@company.com"
               required
-              aria-describedby={
-                state.fieldErrors?.email ? "email-error" : undefined
-              }
             />
             {state.fieldErrors?.email ? (
-              <p id="email-error" className="text-xs text-destructive">
+              <p className="text-xs text-destructive">
                 {state.fieldErrors.email[0]}
               </p>
             ) : null}
@@ -82,12 +77,9 @@ export function LoginForm({ callbackUrl }: { callbackUrl?: string }) {
               type="password"
               autoComplete="current-password"
               required
-              aria-describedby={
-                state.fieldErrors?.password ? "password-error" : undefined
-              }
             />
             {state.fieldErrors?.password ? (
-              <p id="password-error" className="text-xs text-destructive">
+              <p className="text-xs text-destructive">
                 {state.fieldErrors.password[0]}
               </p>
             ) : null}
@@ -97,7 +89,10 @@ export function LoginForm({ callbackUrl }: { callbackUrl?: string }) {
 
           <p className="text-center text-sm text-muted-foreground">
             No account yet?{" "}
-            <Link href="/register" className="text-foreground underline underline-offset-4">
+            <Link
+              href="/register"
+              className="text-foreground underline underline-offset-4"
+            >
               Create an organization
             </Link>
           </p>

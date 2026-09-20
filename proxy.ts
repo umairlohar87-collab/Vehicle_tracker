@@ -1,18 +1,13 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { getToken } from "next-auth/jwt";
 
-/**
- * Optimistic route protection only.
- *
- * This runs on every request including prefetches, so it reads the session
- * cookie and nothing else - no database. The real authorization checks live in
- * lib/dal.ts, next to the data. See the Next.js authentication guide:
- * "Proxy should not be your only line of defense".
- *
- * Renamed from `middleware.ts` in Next.js 16; the runtime is always Node.js.
- */
-
-const PUBLIC_ROUTES = ["/", "/login", "/register"];
+const PUBLIC_ROUTES = [
+  "/",
+  "/login",
+  "/register",
+  "/forgot-password",
+  "/verify-2fa",
+];
 
 export default async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -28,7 +23,6 @@ export default async function proxy(request: NextRequest) {
 
   if (!isAuthenticated && !isPublicRoute) {
     const loginUrl = new URL("/login", request.nextUrl);
-    // Preserve where they were heading so login can send them back.
     loginUrl.searchParams.set("callbackUrl", pathname);
     return NextResponse.redirect(loginUrl);
   }
@@ -42,7 +36,6 @@ export default async function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    // Everything except API routes, Next internals, and static assets.
     "/((?!api|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)",
   ],
 };

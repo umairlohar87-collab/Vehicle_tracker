@@ -1,6 +1,5 @@
 "use server";
 
-import { redirect } from "next/navigation";
 import { AuthError } from "next-auth";
 import bcrypt from "bcryptjs";
 
@@ -21,7 +20,6 @@ function slugify(name: string) {
     .slice(0, 40);
 }
 
-/** Appends a counter until the slug is free. */
 async function uniqueSlug(name: string) {
   const base = slugify(name) || "org";
   let candidate = base;
@@ -38,11 +36,21 @@ async function uniqueSlug(name: string) {
   return `${base}-${Date.now()}`;
 }
 
-/** Only same-origin paths are accepted, so callbackUrl cannot become an open redirect. */
 function safeCallbackUrl(value: FormDataEntryValue | null) {
   if (typeof value !== "string") return "/dashboard";
   if (!value.startsWith("/") || value.startsWith("//")) return "/dashboard";
   return value;
+}
+
+/** Detects Next.js redirect signals thrown by signIn() so we don't swallow them. */
+function isRedirectError(error: unknown): boolean {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "digest" in error &&
+    typeof (error as { digest?: unknown }).digest === "string" &&
+    (error as { digest: string }).digest.startsWith("NEXT_REDIRECT")
+  );
 }
 
 export async function login(
@@ -58,18 +66,29 @@ export async function login(
     return { fieldErrors: parsed.error.flatten().fieldErrors };
   }
 
-  try {
-    // `redirect: false` keeps signIn from throwing its redirect through this
-    // try/catch, so the catch below only ever sees real auth failures.
-    await signIn("credentials", { ...parsed.data, redirect: false });
-  } catch (error) {
-    if (error instanceof AuthError) {
-      return { error: "Invalid email or password." };
-    }
-    throw error;
-  }
+  const callbackUrl = safeCallbackUrl(formData.get("callbackUrl"));
 
-  redirect(safeCallbackUrl(formData.get("callbackUrl")));
+  try {
+    await signIn("credentials", {
+      email: parsed.data.email,
+      password: parsed.data.password,
+      redirectTo: callbackUrl,
+    });
+    return {};
+  } catch (error) {
+    // Next.js redirect must bubble up untouched.
+    if (isRedirectError(error)) throw error;
+
+    if (error instanceof AuthError) {
+      if (error.type === "CredentialsSignin") {
+        return { error: "Invalid email or password." };
+      }
+      return { error: "Sign-in failed. Please try again." };
+    }
+
+    console.error("[login] unexpected error:", error);
+    return { error: "Something went wrong. Please try again." };
+  }
 }
 
 export async function register(
@@ -104,7 +123,6 @@ export async function register(
   const passwordHash = await bcrypt.hash(password, 12);
   const slug = await uniqueSlug(organizationName);
 
-  // The first user of a new organization owns it.
   await prisma.organization.create({
     data: {
       name: organizationName,
@@ -116,16 +134,22 @@ export async function register(
   });
 
   try {
-    await signIn("credentials", { email, password, redirect: false });
+    await signIn("credentials", {
+      email,
+      password,
+      redirectTo: "/dashboard",
+    });
+    return {};
   } catch (error) {
+    if (isRedirectError(error)) throw error;
+
     if (error instanceof AuthError) {
-      // The account exists at this point, so send them to log in manually.
       return { error: "Account created, but sign-in failed. Please log in." };
     }
-    throw error;
-  }
 
-  redirect("/dashboard");
+    console.error("[register] unexpected error:", error);
+    return { error: "Account created, but sign-in failed. Please log in." };
+  }
 }
 
 export async function logout() {

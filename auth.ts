@@ -7,7 +7,8 @@ import { loginSchema } from "@/lib/validations/auth";
 
 // A bcrypt hash of a throwaway value. Verified against when no user matches so
 // that a wrong email and a wrong password take the same amount of time.
-const DUMMY_HASH = "$2b$12$C6UzMDM.H6dfI/f/IKcEe.7Z5Wm0bH5C5tDKNa1nM1mQqPEXk3zAK";
+const DUMMY_HASH =
+  "$2b$12$C6UzMDM.H6dfI/f/IKcEe.7Z5Wm0bH5C5tDKNa1nM1mQqPEXk3zAK";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   session: {
@@ -69,7 +70,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   ],
   callbacks: {
     async jwt({ token, user, trigger }) {
-      // On sign-in, copy the tenant and role onto the token.
       if (user) {
         token.id = user.id as string;
         token.role = user.role;
@@ -77,7 +77,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         return token;
       }
 
-      // A role change would otherwise not take effect until the token expires.
       if (trigger === "update" && token.id) {
         const fresh = await prisma.user.findUnique({
           where: { id: token.id },
