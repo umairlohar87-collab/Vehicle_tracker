@@ -20,37 +20,42 @@
 
   /* A named scale, so a heading is `text-h2` rather than a guessed
      text-xl/font-semibold/tracking-tight trio. Each step carries its own
-     leading, tracking and weight. */
-  --text-display: 2.5rem;
-  --text-display--line-height: 1.06;
-  --text-display--letter-spacing: -0.032em;
+     leading, tracking and weight.
+
+     The two largest steps are fluid: a 48px display line is right on a desktop
+     dashboard and overflows a 360px phone, so they interpolate down to a size
+     that fits rather than wrapping mid-word. Everything from h2 down is
+     already small enough to be fixed. */
+  --text-display: clamp(2.25rem, 1.44rem + 3.4vw, 3rem); /* 36 -> 48 */
+  --text-display--line-height: 1.167; /* 56/48 */
+  --text-display--letter-spacing: -0.03em;
   --text-display--font-weight: 700;
 
-  --text-h1: 1.75rem;
-  --text-h1--line-height: 1.15;
+  --text-h1: clamp(1.75rem, 1.21rem + 2.3vw, 2.25rem); /* 28 -> 36 */
+  --text-h1--line-height: 1.222; /* 44/36 */
   --text-h1--letter-spacing: -0.025em;
   --text-h1--font-weight: 600;
 
-  --text-h2: 1.375rem;
-  --text-h2--line-height: 1.25;
+  --text-h2: 1.75rem; /* 28 */
+  --text-h2--line-height: 1.286; /* 36/28 */
   --text-h2--letter-spacing: -0.02em;
   --text-h2--font-weight: 600;
 
-  --text-h3: 1.125rem;
-  --text-h3--line-height: 1.35;
-  --text-h3--letter-spacing: -0.014em;
+  --text-h3: 1.25rem; /* 20 */
+  --text-h3--line-height: 1.4; /* 28/20 */
+  --text-h3--letter-spacing: -0.02em;
   --text-h3--font-weight: 600;
 
-  --text-h4: 0.9375rem;
-  --text-h4--line-height: 1.4;
-  --text-h4--letter-spacing: -0.008em;
+  --text-h4: 1rem; /* 16 */
+  --text-h4--line-height: 1.5; /* 24/16 */
+  --text-h4--letter-spacing: -0.015em;
   --text-h4--font-weight: 600;
 
-  --text-body: 0.9375rem;
-  --text-body--line-height: 1.55;
+  --text-body: 0.9375rem; /* 15 */
+  --text-body--line-height: 1.6; /* 24/15 */
 
-  --text-caption: 0.75rem;
-  --text-caption--line-height: 1.4;
+  --text-caption: 0.75rem; /* 12 */
+  --text-caption--line-height: 1.333; /* 16/12 */
   --text-caption--letter-spacing: 0.005em;
 
   /* --- Surfaces --------------------------------------------------------- */
@@ -88,11 +93,30 @@
   --color-chart-4: var(--chart-4);
   --color-chart-5: var(--chart-5);
 
+  /* --- Brand ramp --------------------------------------------------------
+     A real 50-950 scale, fixed under both themes. A ramp is a ladder of
+     lightness: inverting it in the dark would make `brand-50` mean "nearly
+     white" in one theme and "nearly black" in the other, and every
+     `border-brand-200` in the app would have to be re-reasoned at the call
+     site. Code that wants "the brand, adjusted for the current lights"
+     reaches for `brand` (below), which does flip. */
+  --color-brand-50: var(--brand-50);
+  --color-brand-100: var(--brand-100);
+  --color-brand-200: var(--brand-200);
+  --color-brand-300: var(--brand-300);
+  --color-brand-400: var(--brand-400);
+  --color-brand-500: var(--brand-500);
+  --color-brand-600: var(--brand-600);
+  --color-brand-700: var(--brand-700);
+  --color-brand-800: var(--brand-800);
+  --color-brand-900: var(--brand-900);
+  --color-brand-950: var(--brand-950);
+
   /* --- Semantic accents -------------------------------------------------
-     `brand`/`success`/`warning`/`danger` say what a thing means; `fuel` and
-     `expense` are the two category hues the cost surfaces use. Each has an
-     `-ink` partner dark enough to read as text on its own theme, because the
-     vivid fill never is. */
+     `brand`/`success`/`warning`/`danger` say what a thing means; `fuel`,
+     `expense`, `trip` and `alert` are the module hues the cost, journey and
+     incident surfaces use. Each has an `-ink` partner dark enough to read as
+     text on its own theme, because the vivid fill never is. */
   --color-brand: var(--brand);
   --color-brand-ink: var(--brand-ink);
   --color-success: var(--success);
@@ -105,6 +129,10 @@
   --color-fuel-ink: var(--fuel-ink);
   --color-expense: var(--expense);
   --color-expense-ink: var(--expense-ink);
+  --color-trip: var(--trip);
+  --color-trip-ink: var(--trip-ink);
+  --color-alert: var(--alert);
+  --color-alert-ink: var(--alert-ink);
 
   /* The per-module hue. `[data-tone]` (below) rebinds these for a subtree, so
      `bg-tone/10 text-tone-ink` renders in that module's colour with no
@@ -112,25 +140,55 @@
   --color-tone: var(--tone);
   --color-tone-ink: var(--tone-ink);
 
-  /* --- Radii ------------------------------------------------------------- */
-  --radius-sm: calc(var(--radius) * 0.6);
-  --radius-md: calc(var(--radius) * 0.8);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) * 1.4);
-  --radius-2xl: calc(var(--radius) * 1.8);
-  --radius-3xl: calc(var(--radius) * 2.2);
-  --radius-4xl: calc(var(--radius) * 2.6);
+  /* --- Radii -------------------------------------------------------------
+     `--radius` is the lg step (16px); the rest are fixed multiples of it, so
+     the ladder lands exactly on 8 / 12 / 16 / 20 / 24 and still moves as one
+     if the base is ever retuned. */
+  --radius-sm: calc(var(--radius) * 0.5); /* 8  */
+  --radius-md: calc(var(--radius) * 0.75); /* 12 */
+  --radius-lg: var(--radius); /* 16 */
+  --radius-xl: calc(var(--radius) * 1.25); /* 20 */
+  --radius-2xl: calc(var(--radius) * 1.5); /* 24 */
+  --radius-3xl: calc(var(--radius) * 2); /* 32 */
+  --radius-4xl: calc(var(--radius) * 2.5); /* 40 */
 }
 
-/* Shadows and motion are plain theme keys: their values are literal, so they
-   do not need the late binding `inline` provides. */
+/* Shadows, spacing and motion are plain theme keys: their values are literal,
+   so they do not need the late binding `inline` provides. */
 @theme {
+  /* --- Spacing -----------------------------------------------------------
+     Named steps for the measurements that repeat on every screen, so `p-card`
+     beats re-deciding between p-4 and p-6 in each component. */
+  --spacing-card: 1.5rem; /* 24 - card padding, tablet and up */
+  --spacing-card-sm: 1rem; /* 16 - card padding on a phone */
+  --spacing-section: 1.75rem; /* 28 - gap between page sections */
+
+  /* --- Elevation ---------------------------------------------------------
+     A five-step ramp tinted with the foreground slate rather than pure black,
+     so a raised surface reads as lifted off *this* page and not as a grey
+     smudge. Each step roughly doubles the blur of the one before it. */
+  --shadow-xs: 0 1px 2px 0 oklch(0.208 0.04 265.8 / 0.05);
   --shadow-sm:
     0 1px 2px -1px oklch(0.208 0.04 265.8 / 0.08),
     0 1px 3px 0 oklch(0.208 0.04 265.8 / 0.06);
   --shadow-md:
     0 2px 4px -2px oklch(0.208 0.04 265.8 / 0.07),
     0 8px 20px -6px oklch(0.208 0.04 265.8 / 0.12);
+  --shadow-lg:
+    0 4px 8px -4px oklch(0.208 0.04 265.8 / 0.08),
+    0 16px 32px -8px oklch(0.208 0.04 265.8 / 0.14);
+  --shadow-xl:
+    0 8px 16px -8px oklch(0.208 0.04 265.8 / 0.1),
+    0 28px 56px -12px oklch(0.208 0.04 265.8 / 0.2);
+
+  /* Coloured halos. Written against the palette rather than as literal rgba so
+     they track the ramp, but the light-theme result is exactly the 0.5-alpha
+     blue and red the spec calls for. */
+  --shadow-glow-brand: 0 0 40px -10px
+    color-mix(in oklch, var(--brand-600) 50%, transparent);
+  --shadow-glow-danger: 0 0 40px -10px
+    color-mix(in oklch, var(--danger) 50%, transparent);
+
   /* Picks up the surrounding module hue, so a card's lift glows in its own
      colour and falls back to the brand blue outside a [data-tone] subtree. */
   --shadow-glow:
@@ -138,8 +196,32 @@
     0 14px 34px -14px
       color-mix(in oklch, var(--tone, var(--brand)) 62%, transparent);
 
+  /* --- Motion ------------------------------------------------------------
+     Two curves carry everything. `out-expo` is the decelerating one: things
+     that arrive, open or settle. `spring` overshoots past its target and comes
+     back, which is what makes a toggle or a tap feel physical - it is wrong
+     for anything that resizes layout, because the overshoot shows up as a
+     jolt in the surrounding content. Durations are named by intent, not by
+     number, so "fast" stays fast if the scale is ever retuned. */
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  /* Not one of Tailwind's namespaces, so these are used as
+     `duration-(--duration-base)` in a class, or `var(--duration-base)` in
+     hand-written CSS. */
+  --duration-fast: 150ms;
+  --duration-base: 250ms;
+  --duration-slow: 400ms;
+
   --animate-shimmer-sweep: shimmer-sweep 1.8s ease-in-out infinite;
   --animate-tap-ripple: tap-ripple 520ms ease-out;
+  --animate-fade-up: fade-up var(--duration-slow) var(--ease-out-expo) both;
+  --animate-scale-in: scale-in var(--duration-base) var(--ease-out-expo) both;
+  --animate-shake: shake 400ms cubic-bezier(0.36, 0.07, 0.19, 0.97);
+  --animate-pulse-ring: pulse-ring 2s var(--ease-out-expo) infinite;
+  --animate-float: float 6s ease-in-out infinite;
+  --animate-mesh-drift: mesh-drift 18s ease-in-out infinite alternate;
+  --animate-bounce-tap: bounce-tap 320ms var(--ease-spring);
 
   @keyframes shimmer-sweep {
     from {
@@ -160,38 +242,149 @@
       transform: scale(2.2);
     }
   }
+
+  /* Entrance for a card or a list row. The 12px rise is small on purpose: it
+     should read as settling into place, not as the row flying in. */
+  @keyframes fade-up {
+    from {
+      opacity: 0;
+      transform: translateY(12px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  @keyframes scale-in {
+    from {
+      opacity: 0;
+      transform: scale(0.96);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  /* Rejected-input nudge. Four beats, decaying, so it reads as a headshake
+     rather than a vibration. */
+  @keyframes shake {
+    0%,
+    100% {
+      transform: translateX(0);
+    }
+    20% {
+      transform: translateX(-6px);
+    }
+    40% {
+      transform: translateX(5px);
+    }
+    60% {
+      transform: translateX(-3px);
+    }
+    80% {
+      transform: translateX(2px);
+    }
+  }
+
+  /* The halo that expands off a live marker or an unread badge. Belongs on an
+     absolutely-positioned ring sibling, not on the dot itself, so the dot
+     stays crisp while the ring scales. */
+  @keyframes pulse-ring {
+    0% {
+      opacity: 0.55;
+      transform: scale(0.85);
+    }
+    70%,
+    100% {
+      opacity: 0;
+      transform: scale(2.1);
+    }
+  }
+
+  @keyframes float {
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-8px);
+    }
+  }
+
+  /* Slow wander for the blurred colour blobs behind a hero. Transform only -
+     animating a filter or a background-position instead would repaint the
+     whole layer every frame. */
+  @keyframes mesh-drift {
+    from {
+      transform: translate3d(0, 0, 0) scale(1);
+    }
+    to {
+      transform: translate3d(6%, -8%, 0) scale(1.18);
+    }
+  }
+
+  @keyframes bounce-tap {
+    0% {
+      transform: scale(1);
+    }
+    38% {
+      transform: scale(0.9);
+    }
+    100% {
+      transform: scale(1);
+    }
+  }
 }
 
 /* ===========================================================================
    Palette
    ---------------------------------------------------------------------------
-   The ten `--hue-*` pairs are the only place a literal colour is written. Dark
-   mode re-points the same names at lighter steps, so every alias, gradient and
-   [data-tone] rule below flips for free.
+   The brand ramp and the `--hue-*` pairs are the only places a literal colour
+   is written. Dark mode re-points the `--hue-*` names at lighter steps, so
+   every alias, gradient and [data-tone] rule below flips for free.
    =========================================================================*/
 :root {
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
   --font-heading: var(--font-sora), var(--font-sans);
 
-  --hue-brand: oklch(0.546 0.215 262.9); /* blue 600   #2563eb */
-  --hue-brand-ink: oklch(0.488 0.217 264.4); /* blue 700 */
-  --hue-sky: oklch(0.715 0.126 215.2); /* cyan 500   #06b6d4 */
-  --hue-sky-ink: oklch(0.52 0.094 223.1); /* cyan 700 */
-  --hue-indigo: oklch(0.585 0.204 277.1); /* indigo 500 #6366f1 */
+  /* --- Brand ramp: blue 50-950, identical under both themes ------------- */
+  --brand-50: oklch(0.97 0.014 254.6); /* #eff6ff */
+  --brand-100: oklch(0.932 0.032 255.6); /* #dbeafe */
+  --brand-200: oklch(0.882 0.057 254.1); /* #bfdbfe */
+  --brand-300: oklch(0.809 0.096 251.8); /* #93c5fd */
+  --brand-400: oklch(0.714 0.143 254.6); /* #60a5fa */
+  --brand-500: oklch(0.623 0.188 259.8); /* #3b82f6 */
+  --brand-600: oklch(0.546 0.215 262.9); /* #2563eb */
+  --brand-700: oklch(0.488 0.217 264.4); /* #1d4ed8 */
+  --brand-800: oklch(0.424 0.181 265.6); /* #1e40af */
+  --brand-900: oklch(0.379 0.138 265.5); /* #1e3a8a */
+  --brand-950: oklch(0.282 0.087 267.9); /* #172554 */
+
+  --hue-brand: var(--brand-600);
+  --hue-brand-ink: var(--brand-700);
+  --hue-sky: oklch(0.685 0.148 237.3); /* sky 500     #0ea5e9 */
+  --hue-sky-ink: oklch(0.5 0.119 242.7); /* sky 700     #0369a1 */
+  --hue-indigo: oklch(0.585 0.204 277.1); /* indigo 500  #6366f1 */
   --hue-indigo-ink: oklch(0.457 0.215 277);
-  --hue-violet: oklch(0.606 0.219 292.7); /* violet 500 #8b5cf6 */
+  --hue-violet: oklch(0.606 0.219 292.7); /* violet 500  #8b5cf6 */
   --hue-violet-ink: oklch(0.491 0.241 292.6);
+  --hue-violet-deep: oklch(0.541 0.247 293); /* violet 600  #7c3aed */
   --hue-emerald: oklch(0.696 0.149 162.5); /* emerald 500 #10b981 */
   --hue-emerald-ink: oklch(0.508 0.105 165.6);
-  --hue-teal: oklch(0.704 0.123 182.5); /* teal 500   #14b8a6 */
+  --hue-teal: oklch(0.704 0.123 182.5); /* teal 500    #14b8a6 */
   --hue-teal-ink: oklch(0.511 0.086 186.4);
-  --hue-amber: oklch(0.769 0.165 70.1); /* amber 500  #f59e0b */
+  --hue-amber: oklch(0.769 0.165 70.1); /* amber 500   #f59e0b */
   --hue-amber-ink: oklch(0.555 0.146 49);
-  --hue-orange: oklch(0.705 0.187 47.6); /* orange 500 #f97316 */
+  --hue-orange: oklch(0.705 0.187 47.6); /* orange 500  #f97316 */
   --hue-orange-ink: oklch(0.553 0.174 38.4);
-  --hue-rose: oklch(0.637 0.208 25.3); /* rose 500   #ef4444 */
-  --hue-rose-ink: oklch(0.505 0.19 27.5);
-  --hue-slate: oklch(0.554 0.041 257.4); /* slate 500  #64748b */
+  --hue-orange-light: oklch(0.758 0.159 55.9); /* orange 400  #fb923c */
+  --hue-rose: oklch(0.637 0.208 25.3); /* red 500     #ef4444 */
+  --hue-rose-ink: oklch(0.505 0.19 27.5); /* red 700     #b91c1c */
+  --hue-red: oklch(0.577 0.215 27.3); /* red 600     #dc2626 */
+  --hue-red-ink: oklch(0.505 0.19 27.5); /* red 700     #b91c1c */
+  --hue-slate: oklch(0.554 0.041 257.4); /* slate 500   #64748b */
   --hue-slate-ink: oklch(0.372 0.039 257.3);
 
   /* Meaning, not colour: these are what non-module code reaches for. */
@@ -207,6 +400,12 @@
   --fuel-ink: var(--hue-orange-ink);
   --expense: var(--hue-violet);
   --expense-ink: var(--hue-violet-ink);
+  --trip: var(--hue-sky);
+  --trip-ink: var(--hue-sky-ink);
+  /* One step hotter than `danger`, and reserved for a fired alert, so an
+     incident row never reads the same as an ordinary destructive control. */
+  --alert: var(--hue-red);
+  --alert-ink: var(--hue-red-ink);
 
   /* Outside a [data-tone] subtree the module hue is the brand. */
   --tone: var(--brand);
@@ -220,7 +419,7 @@
   --card-foreground: oklch(0.208 0.04 265.8);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.208 0.04 265.8);
-  --primary: var(--hue-brand);
+  --primary: var(--brand-600);
   --primary-foreground: oklch(0.99 0.004 247.9);
   --secondary: oklch(0.968 0.007 247.9);
   --secondary-foreground: oklch(0.279 0.037 260);
@@ -231,8 +430,8 @@
   --destructive: oklch(0.577 0.215 27.3);
   --border: oklch(0.929 0.013 255.5);
   --input: oklch(0.929 0.013 255.5);
-  --ring: oklch(0.623 0.188 259.8);
-  --radius: 0.625rem;
+  --ring: var(--brand-500);
+  --radius: 1rem;
 
   --sidebar: oklch(0.984 0.005 247.9);
   --sidebar-foreground: oklch(0.208 0.04 265.8);
@@ -241,7 +440,7 @@
   --sidebar-accent: oklch(0.955 0.014 250);
   --sidebar-accent-foreground: oklch(0.279 0.037 260);
   --sidebar-border: oklch(0.929 0.013 255.5);
-  --sidebar-ring: oklch(0.623 0.188 259.8);
+  --sidebar-ring: var(--brand-500);
 
   --chart-1: oklch(0.87 0 0);
   --chart-2: oklch(0.556 0 0);
@@ -250,15 +449,15 @@
   --chart-5: oklch(0.269 0 0);
 
   /* --- Gradients -------------------------------------------------------- */
-  --gradient-primary: linear-gradient(
+  --gradient-brand: linear-gradient(
     135deg,
-    var(--hue-brand) 0%,
-    var(--hue-violet) 100%
+    var(--brand-600) 0%,
+    var(--hue-violet-deep) 100%
   );
   --gradient-fuel: linear-gradient(
     135deg,
     var(--hue-orange) 0%,
-    var(--hue-amber) 100%
+    var(--hue-orange-light) 100%
   );
   --gradient-success: linear-gradient(
     135deg,
@@ -268,7 +467,17 @@
   --gradient-alert: linear-gradient(
     135deg,
     var(--hue-rose) 0%,
-    oklch(0.505 0.19 27.5) 100%
+    var(--hue-red) 100%
+  );
+  /* A sheen, not a fill: it sits *on* a translucent surface to fake the way
+     light catches the top-left edge of a pane of glass. Over a light page the
+     white has to be strong enough to lift the panel off the background; over
+     a dark one a tenth of white is already plenty, so `.dark` drops it to
+     near-nothing. */
+  --gradient-glass: linear-gradient(
+    135deg,
+    rgb(255 255 255 / 0.75) 0%,
+    rgb(255 255 255 / 0.35) 100%
   );
   /* The wash behind a page header: the module hue fading into the page. */
   --gradient-tone-wash: linear-gradient(
@@ -277,17 +486,22 @@
     color-mix(in oklch, var(--tone) 4%, transparent) 42%,
     transparent 78%
   );
+
+  /* Kept so existing callers of the old name keep rendering; new code should
+     reach for `--gradient-brand`. */
+  --gradient-primary: var(--gradient-brand);
 }
 
 .dark {
-  --hue-brand: oklch(0.623 0.188 259.8); /* blue 500 */
-  --hue-brand-ink: oklch(0.809 0.096 251.8); /* blue 300 */
-  --hue-sky: oklch(0.797 0.134 211.5);
-  --hue-sky-ink: oklch(0.865 0.115 207.1);
+  --hue-brand: var(--brand-500);
+  --hue-brand-ink: var(--brand-300);
+  --hue-sky: oklch(0.754 0.139 232.7); /* sky 400    #38bdf8 */
+  --hue-sky-ink: oklch(0.828 0.101 230.3); /* sky 300    #7dd3fc */
   --hue-indigo: oklch(0.68 0.158 276.9);
   --hue-indigo-ink: oklch(0.785 0.104 274.7);
   --hue-violet: oklch(0.709 0.159 293.5);
   --hue-violet-ink: oklch(0.811 0.101 293.6);
+  --hue-violet-deep: oklch(0.606 0.219 292.7); /* violet 500 */
   --hue-emerald: oklch(0.773 0.153 163.2);
   --hue-emerald-ink: oklch(0.845 0.13 165);
   --hue-teal: oklch(0.785 0.133 181.9);
@@ -296,8 +510,11 @@
   --hue-amber-ink: oklch(0.879 0.153 91.6);
   --hue-orange: oklch(0.758 0.159 55.9);
   --hue-orange-ink: oklch(0.837 0.117 66.3);
-  --hue-rose: oklch(0.711 0.166 22.2);
-  --hue-rose-ink: oklch(0.808 0.103 19.6);
+  --hue-orange-light: oklch(0.837 0.117 66.3); /* orange 300 */
+  --hue-rose: oklch(0.711 0.166 22.2); /* red 400    #f87171 */
+  --hue-rose-ink: oklch(0.808 0.103 19.6); /* red 300    #fca5a5 */
+  --hue-red: oklch(0.637 0.208 25.3); /* red 500    #ef4444 */
+  --hue-red-ink: oklch(0.808 0.103 19.6); /* red 300    #fca5a5 */
   --hue-slate: oklch(0.711 0.035 256.8);
   --hue-slate-ink: oklch(0.869 0.02 252.9);
 
@@ -309,7 +526,7 @@
   --popover-foreground: oklch(0.968 0.007 247.9);
   /* Stays blue 600 in both themes: white on it clears 5:1, which blue 500 does
      not, and the brand should not change hue with the lights. */
-  --primary: oklch(0.546 0.215 262.9);
+  --primary: var(--brand-600);
   --primary-foreground: oklch(0.99 0.004 247.9);
   --secondary: oklch(0.279 0.037 260);
   --secondary-foreground: oklch(0.968 0.007 247.9);
@@ -320,7 +537,7 @@
   --destructive: oklch(0.704 0.191 22.216);
   --border: oklch(1 0 0 / 11%);
   --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.623 0.188 259.8);
+  --ring: var(--brand-500);
 
   --sidebar: oklch(0.192 0.037 265);
   --sidebar-foreground: oklch(0.968 0.007 247.9);
@@ -329,13 +546,26 @@
   --sidebar-accent: oklch(0.295 0.038 260);
   --sidebar-accent-foreground: oklch(0.968 0.007 247.9);
   --sidebar-border: oklch(1 0 0 / 11%);
-  --sidebar-ring: oklch(0.623 0.188 259.8);
+  --sidebar-ring: var(--brand-500);
 
   --chart-1: oklch(0.87 0 0);
   --chart-2: oklch(0.556 0 0);
   --chart-3: oklch(0.439 0 0);
   --chart-4: oklch(0.371 0 0);
   --chart-5: oklch(0.269 0 0);
+
+  /* Both ends of the brand gradient step one rung lighter: blue 600 into
+     violet 600 is almost black against a slate 900 card. */
+  --gradient-brand: linear-gradient(
+    135deg,
+    var(--brand-500) 0%,
+    var(--hue-violet) 100%
+  );
+  --gradient-glass: linear-gradient(
+    135deg,
+    rgb(255 255 255 / 0.1) 0%,
+    rgb(255 255 255 / 0.02) 100%
+  );
 }
 
 /* ---------------------------------------------------------------------------
@@ -343,6 +573,11 @@
    Set `data-tone` on any element and everything inside it - icon badge, stat
    card border, header wash, hover glow - renders in that hue. One attribute
    instead of ten colour-conditional class maps.
+
+   The first group names hues, for a module that only needs to look distinct
+   from its neighbours. The second names meanings, for a surface that is about
+   money or an incident and should keep following `--fuel` / `--alert` even if
+   those are ever re-pointed at a different hue.
    ------------------------------------------------------------------------*/
 [data-tone="brand"] {
   --tone: var(--hue-brand);
@@ -385,6 +620,35 @@
   --tone-ink: var(--hue-slate-ink);
 }
 
+[data-tone="success"] {
+  --tone: var(--success);
+  --tone-ink: var(--success-ink);
+}
+[data-tone="warning"] {
+  --tone: var(--warning);
+  --tone-ink: var(--warning-ink);
+}
+[data-tone="danger"] {
+  --tone: var(--danger);
+  --tone-ink: var(--danger-ink);
+}
+[data-tone="fuel"] {
+  --tone: var(--fuel);
+  --tone-ink: var(--fuel-ink);
+}
+[data-tone="expense"] {
+  --tone: var(--expense);
+  --tone-ink: var(--expense-ink);
+}
+[data-tone="trip"] {
+  --tone: var(--trip);
+  --tone-ink: var(--trip-ink);
+}
+[data-tone="alert"] {
+  --tone: var(--alert);
+  --tone-ink: var(--alert-ink);
+}
+
 /* ===========================================================================
    Utilities
    =========================================================================*/
@@ -409,9 +673,22 @@
   }
 }
 
+/* A glass *panel* rather than a glass bar: the blur plus the edge sheen and a
+   hairline border, for a card or a menu that floats over content. */
+@utility glass-panel {
+  background-color: color-mix(in oklch, var(--card) 72%, transparent);
+  background-image: var(--gradient-glass);
+  border: 1px solid color-mix(in oklch, var(--foreground) 10%, transparent);
+  @supports (backdrop-filter: blur(1px)) {
+    background-color: color-mix(in oklch, var(--card) 55%, transparent);
+    backdrop-filter: blur(24px) saturate(180%);
+    -webkit-backdrop-filter: blur(24px) saturate(180%);
+  }
+}
+
 /* Paints text with the brand gradient. */
 @utility text-gradient {
-  background-image: var(--gradient-primary);
+  background-image: var(--gradient-brand);
   background-clip: text;
   -webkit-background-clip: text;
   color: transparent;
@@ -429,8 +706,8 @@
    hue. Paired with `transition` so the pointer leaving animates back. */
 @utility lift {
   transition:
-    transform 220ms cubic-bezier(0.22, 1, 0.36, 1),
-    box-shadow 220ms cubic-bezier(0.22, 1, 0.36, 1);
+    transform var(--duration-base) var(--ease-out-expo),
+    box-shadow var(--duration-base) var(--ease-out-expo);
 
   &:hover {
     transform: translateY(-2px);
